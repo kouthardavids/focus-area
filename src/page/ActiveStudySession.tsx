@@ -1,20 +1,42 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Pause, Play, BookOpen, Smartphone, AlertTriangle } from "lucide-react";
+import { Pause, Play, BookOpen, Smartphone, AlertTriangle, Clock } from "lucide-react";
 
-import { BACKGROUNDS } from "../data/imageurls";
+import { BACKGROUNDS, type Background } from "../data/imageurls";
 import { useGoogleFonts } from "../api/googlefontapi";
+
 import { useYouTubeMusicPlayer } from "../components/YoutubeMusicPlayer";
-import { Glass, MusicButton, SettingsButton } from "../components/Panels";
+import { Glass } from "../components/Panels/Glass";
+import { MusicButton } from "../components/Panels/Music";
+import { TimerPanel } from "../components/Panels/Timer";
+import { SettingsButton } from "../components/Panels/Settings";
 
 const googleApiKey = import.meta.env.VITE_GOOGLE_API_KEY;
+
+const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+            2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(
+        2, "0")}`;
+};
 
 export default function ActiveStudySession() {
     useGoogleFonts();
 
-    const [background, setBackground] = useState(BACKGROUNDS[0]);
-    const [secondsLeft, setSecondsLeft] = useState(42 * 60 + 37);
+    const [background, setBackground] = useState<Background>(BACKGROUNDS[0]);
+    const [secondsLeft, setSecondsLeft] = useState("");
     const [isPaused, setIsPaused] = useState(false);
     const [ended, setEnded] = useState(false);
+    const [editTimer, setEditTimer] = useState(false);
+    const [timerHours, setTimerHours] = useState("");
+    const [timerMinutes, setTimerMinutes] = useState("");
+    const [timerSeconds, setTimerSeconds] = useState("");
 
     const [musicPanelOpen, setMusicPanelOpen] = useState(false);
     const player = useYouTubeMusicPlayer(googleApiKey);
@@ -59,46 +81,18 @@ export default function ActiveStudySession() {
         setMusicPanelOpen(false);
     };
 
-    const serif = { fontFamily: "'Fraunces', serif" };
+    const handleSetTimer = () => {
+        const hours = Math.max(0, Number(timerHours) || 0);
+        const minutes = Math.max(0, Number(timerMinutes) || 0);
+        const seconds = Math.min(59, Math.max(0, Number(timerSeconds) || 0));
+
+        setSecondsLeft(hours * 3600 + minutes * 60 + seconds);
+        setIsPaused(false);
+        setEnded(false);
+        setEditTimer(false);
+    };
+
     const sans = { fontFamily: "'Inter', sans-serif" };
-
-    if (ended) {
-        return (
-            <div
-                className="relative w-full h-screen min-h-screen overflow-hidden flex items-center justify-center"
-                style={{
-                    backgroundImage: `url(${background.url})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                }}
-            >
-                <div className="absolute inset-0 bg-black/60" />
-                <Glass className="relative z-10 rounded-[28px] px-10 py-9 flex flex-col items-center gap-5 max-w-sm mx-4 text-center">
-                    <p
-                        className="text-[#F3ECE0] text-2xl"
-                        style={{ ...serif, fontWeight: 400 }}
-                    >
-                        Session complete
-                    </p>
-                    <p className="text-[#C9BFAF] text-sm" style={sans}>
-                        You studied Python Tuples for {formatTime(42 * 60 + 37 - secondsLeft)}.
-                    </p>
-                    <button
-                        onClick={() => {
-                            setEnded(false);
-                            setSecondsLeft(42 * 60 + 37);
-                            setIsPaused(false);
-                        }}
-                        style={sans}
-                        className="mt-2 px-6 py-2.5 rounded-full bg-[#E7A967]/90 hover:bg-[#E7A967] text-[#1a140a] text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F3ECE0]"
-                    >
-                        Start another session
-                    </button>
-                </Glass>
-            </div>
-        );
-    }
-
     return (
         <div
             className="relative w-full h-screen min-h-screen overflow-hidden select-none"
@@ -213,6 +207,31 @@ export default function ActiveStudySession() {
                     <span className="w-px h-3.5 bg-white/15" />
 
                     <button
+                        onClick={() => {
+                            const hours = Math.floor(secondsLeft / 3600);
+                            const minutes = Math.floor((secondsLeft % 3600) / 60);
+                            const seconds = secondsLeft % 60;
+
+                            setTimerHours(String(hours));
+                            setTimerMinutes(String(minutes));
+                            setTimerSeconds(String(seconds));
+                            setEditTimer(true);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full transition-colors hover:bg-white/[0.06]"
+                        style={sans}
+                    >
+                        <Clock
+                            className="w-[13px] h-[13px] text-[#F3ECE0]"
+                            strokeWidth={2}
+                        />
+                        <span className="text-[12px] text-[#F3ECE0]">
+                            Timer
+                        </span>
+                    </button>
+
+                    <span className="w-px h-3.5 bg-white/15" />
+
+                    <button
                         onClick={() => setPhoneDetected((v) => !v)}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-full transition-colors hover:bg-white/[0.06]"
                         style={sans}
@@ -232,7 +251,18 @@ export default function ActiveStudySession() {
                     </button>
                 </Glass>
             </div>
-
+            {editTimer && (
+                <TimerPanel
+                    hours={timerHours}
+                    minutes={timerMinutes}
+                    seconds={timerSeconds}
+                    onHoursChange={setTimerHours}
+                    onMinutesChange={setTimerMinutes}
+                    onSecondsChange={setTimerSeconds}
+                    onSetTimer={handleSetTimer}
+                    onClose={() => setEditTimer(false)}
+                />
+            )}
             <style>{`
         @keyframes breathe {
           0%, 100% { transform: scale(0.94); opacity: 0.75; }
@@ -257,8 +287,3 @@ export default function ActiveStudySession() {
     );
 }
 
-function formatTime(totalSeconds: number) {
-    const m = Math.floor(totalSeconds / 60);
-    const s = totalSeconds % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}

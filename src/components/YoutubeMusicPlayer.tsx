@@ -55,7 +55,6 @@ async function searchYouTube(
         }));
 }
 
-/** Loads the YouTube IFrame Player API script once and resolves when ready. */
 function useYouTubeIframeApi() {
     const [ready, setReady] = useState(false);
 
@@ -156,7 +155,6 @@ export function useYouTubeMusicPlayer(apiKey: string | undefined) {
                 },
             },
         });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ytApiReady]);
 
     // Keep the player's volume in sync with the slider.
