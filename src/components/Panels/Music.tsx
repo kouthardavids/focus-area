@@ -44,7 +44,7 @@ export const MusicButton = forwardRef<
                 ) : (
                     <VolumeX className="w-[15px] h-[15px] text-[#C9BFAF]" strokeWidth={1.8} />
                 )}
-                <span className="hidden sm:inline">Music</span>
+                <span className="hidden sm:inline">Study Tunes</span>
             </button>
 
             {open && <MusicPanel player={player} apiKey={apiKey} onClose={onClose} />}
